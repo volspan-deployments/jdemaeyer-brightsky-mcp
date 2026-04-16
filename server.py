@@ -16,144 +16,58 @@ BASE_URL = "https://api.brightsky.dev"
 @mcp.tool()
 async def get_weather(
     date: str,
+    last_date: Optional[str] = None,
     lat: Optional[str] = None,
     lon: Optional[str] = None,
-    last_date: Optional[str] = None,
-    station_id: Optional[str] = None,
-    source_id: Optional[str] = None,
+    station_id: Optional[int] = None,
     units: Optional[str] = "dwd",
 ) -> dict:
-    """Retrieve hourly weather observations or forecasts for a specific location and time range.
-    Use this when the user asks about current, past, or future weather conditions at a given location in Germany.
-    Supports both coordinate-based and station-based queries.
+    """Retrieve current or historical weather observations for a specific location and time range.
+    Use this when the user wants to know weather conditions (temperature, wind, precipitation, etc.)
+    for a German location at a specific date or time period.
+    Supports querying by coordinates or station ID.
     """
-    params = {"date": date}
+    params = {"date": date, "units": units}
+    if last_date:
+        params["last_date"] = last_date
     if lat is not None:
         params["lat"] = lat
     if lon is not None:
         params["lon"] = lon
-    if last_date is not None:
-        params["last_date"] = last_date
     if station_id is not None:
         params["station_id"] = station_id
-    if source_id is not None:
-        params["source_id"] = source_id
-    if units is not None:
-        params["units"] = units
 
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"{BASE_URL}/weather", params=params, timeout=30.0)
+        response = await client.get(f"{BASE_URL}/weather", params=params, timeout=30)
         response.raise_for_status()
         return response.json()
 
 
 @mcp.tool()
-async def get_current_weather(
+async def get_forecast(
+    date: str,
+    last_date: Optional[str] = None,
     lat: Optional[str] = None,
     lon: Optional[str] = None,
-    station_id: Optional[str] = None,
-    source_id: Optional[str] = None,
+    station_id: Optional[int] = None,
     units: Optional[str] = "dwd",
 ) -> dict:
-    """Retrieve the most recent weather observation for a specific location.
-    Use this when the user wants to know what the weather is like right now at a given place in Germany.
+    """Retrieve weather forecast data (MOSMIX model) for a specific location and future time range.
+    Use this when the user wants to know predicted/future weather conditions for a German location.
+    Returns hourly forecast values including temperature, wind, precipitation probability, etc.
     """
-    params = {}
-    if lat is not None:
-        params["lat"] = lat
-    if lon is not None:
-        params["lon"] = lon
-    if station_id is not None:
-        params["station_id"] = station_id
-    if source_id is not None:
-        params["source_id"] = source_id
-    if units is not None:
-        params["units"] = units
-
-    async with httpx.AsyncClient() as client:
-        response = await client.get(f"{BASE_URL}/current_weather", params=params, timeout=30.0)
-        response.raise_for_status()
-        return response.json()
-
-
-@mcp.tool()
-async def get_sources(
-    lat: Optional[str] = None,
-    lon: Optional[str] = None,
-    max_dist: Optional[int] = 50000,
-    station_id: Optional[str] = None,
-    source_id: Optional[str] = None,
-) -> dict:
-    """Find available DWD weather stations and data sources near a given location or matching specific criteria.
-    Use this to discover which stations cover an area, check station metadata, or find station IDs for follow-up weather queries.
-    """
-    params = {}
-    if lat is not None:
-        params["lat"] = lat
-    if lon is not None:
-        params["lon"] = lon
-    if max_dist is not None:
-        params["max_dist"] = max_dist
-    if station_id is not None:
-        params["station_id"] = station_id
-    if source_id is not None:
-        params["source_id"] = source_id
-
-    async with httpx.AsyncClient() as client:
-        response = await client.get(f"{BASE_URL}/sources", params=params, timeout=30.0)
-        response.raise_for_status()
-        return response.json()
-
-
-@mcp.tool()
-async def get_alerts(
-    lat: Optional[str] = None,
-    lon: Optional[str] = None,
-    warn_cell_id: Optional[str] = None,
-) -> dict:
-    """Retrieve active weather alerts and warnings issued by DWD for a specific location or region.
-    Use this when the user asks about severe weather warnings, storm alerts, or weather hazards in Germany.
-    """
-    params = {}
-    if lat is not None:
-        params["lat"] = lat
-    if lon is not None:
-        params["lon"] = lon
-    if warn_cell_id is not None:
-        params["warn_cell_id"] = warn_cell_id
-
-    async with httpx.AsyncClient() as client:
-        response = await client.get(f"{BASE_URL}/alerts", params=params, timeout=30.0)
-        response.raise_for_status()
-        return response.json()
-
-
-@mcp.tool()
-async def get_radar(
-    lat: Optional[str] = None,
-    lon: Optional[str] = None,
-    date: Optional[str] = None,
-    last_date: Optional[str] = None,
-    bbox: Optional[str] = None,
-) -> dict:
-    """Retrieve radar-based precipitation data for a given location and time range.
-    Use this when the user wants to know about rainfall intensity, precipitation maps,
-    or wants to see recent rain radar information for Germany.
-    """
-    params = {}
-    if lat is not None:
-        params["lat"] = lat
-    if lon is not None:
-        params["lon"] = lon
-    if date is not None:
-        params["date"] = date
-    if last_date is not None:
+    params = {"date": date, "units": units}
+    if last_date:
         params["last_date"] = last_date
-    if bbox is not None:
-        params["bbox"] = bbox
+    if lat is not None:
+        params["lat"] = lat
+    if lon is not None:
+        params["lon"] = lon
+    if station_id is not None:
+        params["station_id"] = station_id
 
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"{BASE_URL}/radar", params=params, timeout=30.0)
+        response = await client.get(f"{BASE_URL}/forecast", params=params, timeout=30)
         response.raise_for_status()
         return response.json()
 
@@ -164,15 +78,15 @@ async def get_synop(
     last_date: Optional[str] = None,
     lat: Optional[str] = None,
     lon: Optional[str] = None,
-    station_id: Optional[str] = None,
-    source_id: Optional[str] = None,
+    station_id: Optional[int] = None,
+    units: Optional[str] = "dwd",
 ) -> dict:
-    """Retrieve raw SYNOP meteorological observation data from DWD stations for a given location or station and time range.
-    Use this when the user needs detailed raw meteorological measurements, wind data, pressure, visibility,
-    or other SYNOP-specific fields not available in standard weather observations.
+    """Retrieve raw SYNOP weather observations for a specific location and time range.
+    Use this when the user needs raw meteorological SYNOP report data from DWD stations
+    rather than processed weather observations.
     """
-    params = {"date": date}
-    if last_date is not None:
+    params = {"date": date, "units": units}
+    if last_date:
         params["last_date"] = last_date
     if lat is not None:
         params["lat"] = lat
@@ -180,11 +94,118 @@ async def get_synop(
         params["lon"] = lon
     if station_id is not None:
         params["station_id"] = station_id
-    if source_id is not None:
-        params["source_id"] = source_id
 
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"{BASE_URL}/synop", params=params, timeout=30.0)
+        response = await client.get(f"{BASE_URL}/synop", params=params, timeout=30)
+        response.raise_for_status()
+        return response.json()
+
+
+@mcp.tool()
+async def find_stations(
+    lat: Optional[str] = None,
+    lon: Optional[str] = None,
+    max_dist: Optional[int] = 50000,
+    date: Optional[str] = None,
+    last_date: Optional[str] = None,
+) -> dict:
+    """Search for DWD weather stations near a location or by name.
+    Use this to discover available weather stations, find station IDs for a city
+    or coordinates, or check which stations have data for a given time period.
+    """
+    params = {}
+    if lat is not None:
+        params["lat"] = lat
+    if lon is not None:
+        params["lon"] = lon
+    if max_dist is not None:
+        params["max_dist"] = max_dist
+    if date:
+        params["date"] = date
+    if last_date:
+        params["last_date"] = last_date
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{BASE_URL}/stations", params=params, timeout=30)
+        response.raise_for_status()
+        return response.json()
+
+
+@mcp.tool()
+async def get_current_weather(
+    lat: Optional[str] = None,
+    lon: Optional[str] = None,
+    station_id: Optional[int] = None,
+    units: Optional[str] = "dwd",
+) -> dict:
+    """Retrieve the most recent weather observation for a location.
+    Use this when the user wants the current or latest weather conditions
+    at a specific location in Germany. This provides real-time or near-real-time weather data.
+    """
+    params = {"units": units}
+    if lat is not None:
+        params["lat"] = lat
+    if lon is not None:
+        params["lon"] = lon
+    if station_id is not None:
+        params["station_id"] = station_id
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{BASE_URL}/current_weather", params=params, timeout=30)
+        response.raise_for_status()
+        return response.json()
+
+
+@mcp.tool()
+async def get_alerts(
+    lat: Optional[str] = None,
+    lon: Optional[str] = None,
+    warn_cell_id: Optional[int] = None,
+) -> dict:
+    """Retrieve active weather alerts and warnings for a location in Germany.
+    Use this when the user wants to know about severe weather warnings, storms, floods,
+    or other meteorological hazards issued by DWD for a specific area.
+    """
+    params = {}
+    if lat is not None:
+        params["lat"] = lat
+    if lon is not None:
+        params["lon"] = lon
+    if warn_cell_id is not None:
+        params["warn_cell_id"] = warn_cell_id
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{BASE_URL}/alerts", params=params, timeout=30)
+        response.raise_for_status()
+        return response.json()
+
+
+@mcp.tool()
+async def get_radar(
+    date: Optional[str] = None,
+    last_date: Optional[str] = None,
+    lat: Optional[str] = None,
+    lon: Optional[str] = None,
+    distance: Optional[int] = None,
+) -> dict:
+    """Retrieve radar-based precipitation data for Germany.
+    Use this when the user wants precipitation intensity maps, radar images,
+    or rain/snow distribution data for a specific time and area.
+    """
+    params = {}
+    if date:
+        params["date"] = date
+    if last_date:
+        params["last_date"] = last_date
+    if lat is not None:
+        params["lat"] = lat
+    if lon is not None:
+        params["lon"] = lon
+    if distance is not None:
+        params["distance"] = distance
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{BASE_URL}/radar", params=params, timeout=30)
         response.raise_for_status()
         return response.json()
 
@@ -220,5 +241,6 @@ app = Starlette(
     ],
     lifespan=sse_app.lifespan,
 )
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
